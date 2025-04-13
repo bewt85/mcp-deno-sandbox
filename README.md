@@ -1,10 +1,12 @@
 # Deno Sandbox MCP Server
 
-An MCP server that allows you to run TypeScript and JavaScript code securely on your local machine using the Deno sandbox. This server provides a controlled environment for executing code with explicit permission controls.
+An MCP server that allows you to run TypeScript and JavaScript code securely on your local machine using the Deno® sandbox. This server provides a controlled environment for executing code with explicit permission controls.
+
+> **Note:** This project is not affiliated with Deno Land LLC in any way. I'm just a fan of the Deno® runtime. "Deno" is a registered trademark of Deno Land LLC.
 
 ## Features
 
-- Execute TypeScript/JavaScript code in a secure Deno sandbox
+- Execute TypeScript/JavaScript code in a secure Deno® sandbox
 - Granular permission control via command-line flags
 - Clear error messages for permission issues
 - Resource that lists available permissions
@@ -49,7 +51,7 @@ To use this MCP server with Claude Desktop, add it to your `claude_desktop_confi
      - Good for processing isolated files
      - Tradeoff: Limited functionality, but much safer
 
-For a complete list of permissions and detailed documentation, see [Deno Security](https://docs.deno.com/runtime/fundamentals/security/).
+For a complete list of permissions and detailed documentation, see [Deno® Security](https://docs.deno.com/runtime/fundamentals/security/).
 
 ## Security Considerations
 
