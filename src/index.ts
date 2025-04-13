@@ -1,32 +1,58 @@
-import { exec } from "child_process";
-import { promisify } from "util";
-
-const execAsync = promisify(exec);
+import { spawn } from "child_process";
 
 /**
- * Executes a Deno script with specified permissions
- * @param script Path to the script to run
+ * Executes a Deno script string with specified permissions
+ * @param scriptCode String containing the script code to run
  * @param permissions Array of permission flags for Deno
- * @returns Result of script execution
+ * @returns Promise with the script execution result
  */
-async function runScript(script: string, permissions: string[] = []) {
-  try {
-    const permissionFlags = permissions.map(p => `--${p}`).join(' ');
-    const command = `deno run ${permissionFlags} ${script}`;
+function runScript(scriptCode: string, permissions: string[] = []) {
+  return new Promise((resolve, reject) => {
+    // Format permission flags exactly as Deno expects them
+    const args = [...permissions, "-"];
     
-    console.log(`Executing: ${command}`);
+    console.log(`Executing: deno run ${permissions.join(' ')} -`);
     
-    const { stdout, stderr } = await execAsync(command);
+    // Spawn deno process with permissions
+    const deno = spawn("deno", ["run", ...args], {
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
     
-    if (stderr) {
-      console.error("Error output:", stderr);
-    }
+    let stdout = "";
+    let stderr = "";
     
-    return stdout;
-  } catch (error) {
-    console.error("Failed to execute Deno script:", error);
-    throw error;
-  }
+    // Collect stdout data
+    deno.stdout.on('data', (data) => {
+      stdout += data.toString();
+    });
+    
+    // Collect stderr data
+    deno.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
+    
+    // Handle process completion
+    deno.on('close', (code) => {
+      if (stderr) {
+        console.error("Error output:", stderr);
+      }
+      
+      if (code === 0) {
+        resolve(stdout);
+      } else {
+        reject(new Error(`Deno process exited with code ${code}: ${stderr}`));
+      }
+    });
+    
+    // Handle process errors
+    deno.on('error', (err) => {
+      reject(new Error(`Failed to start Deno process: ${err.message}`));
+    });
+    
+    // Send script code to stdin and close the stream
+    deno.stdin.write(scriptCode);
+    deno.stdin.end();
+  });
 }
 
 /**
@@ -37,45 +63,33 @@ async function main() {
   
   if (args.length === 0) {
     console.error("Error: No script specified");
-    console.log("Usage: npm start -- <script.ts> [permissions]");
-    console.log("Available permissions:");
-    console.log("  allow-read    - Allow file system read access");
-    console.log("  allow-write   - Allow file system write access");
-    console.log("  allow-net     - Allow network access");
-    console.log("  allow-env     - Allow environment access");
-    console.log("  allow-run     - Allow running subprocesses");
-    console.log("  deny-read     - Deny file system read access to specific paths");
-    console.log("  deny-write    - Deny file system write access to specific paths");
-    console.log("  deny-net      - Deny network access to specific domains");
-    console.log("  deny-env      - Deny access to specific environment variables");
-    console.log("  deny-run      - Deny running specific subprocesses");
+    console.log("Usage: npm start -- \"<script code>\" [permission flags]");
+    console.log("Example permissions:");
+    console.log("  --allow-read            Allow file system read access");
+    console.log("  --allow-write           Allow file system write access");
+    console.log("  --allow-net             Allow network access");
+    console.log("  --allow-env             Allow environment access");
+    console.log("  --allow-run             Allow running subprocesses");
+    console.log("  --allow-read=/path      Allow read access to specific path");
+    console.log("  --deny-read=/path       Deny read access to specific path");
     console.log("Examples:");
-    console.log("  npm start -- script.ts allow-net allow-read");
-    console.log("  npm start -- script.ts allow-net=example.com deny-net=evil.com");
+    console.log("  npm start -- \"console.log('Hello')\" --allow-net --allow-read");
+    console.log("  npm start -- \"Deno.readTextFile('./file.txt')\" --allow-read=./file.txt");
     process.exit(1);
   }
   
-  const scriptPath = args[0];
-  const supportedPermissions = [
-    'allow-read', 'allow-write', 'allow-net', 'allow-env', 'allow-run',
-    'deny-read', 'deny-write', 'deny-net', 'deny-env', 'deny-run'
-  ];
+  const scriptCode = args[0];
   
-  // Filter valid permission args
-  const permissions = args.slice(1).filter(arg => {
-    // Check if the arg starts with any supported permission
-    return supportedPermissions.some(perm => 
-      arg === perm || arg.startsWith(`${perm}=`)
-    );
-  });
+  // Extract permission flags (all arguments starting with --)
+  const permissions = args.slice(1).filter(arg => arg.startsWith('--'));
   
   try {
-    console.log(`Running Deno script: ${scriptPath}`);
-    const result = await runScript(scriptPath, permissions);
+    console.log(`Running Deno script code`);
+    const result = await runScript(scriptCode, permissions);
     console.log("Script output:");
     console.log(result);
   } catch (error) {
-    console.error("Script execution failed");
+    console.error("Script execution failed:", error);
     process.exit(1);
   }
 }
