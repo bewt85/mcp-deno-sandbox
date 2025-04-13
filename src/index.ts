@@ -4,43 +4,30 @@ import { spawn } from "child_process";
  * Executes a Deno script string with specified permissions
  * @param scriptCode String containing the script code to run
  * @param permissions Array of permission flags for Deno
- * @returns Promise with the script execution result
+ * @returns Promise that resolves when the script completes successfully
  */
 function runScript(scriptCode: string, permissions: string[] = []) {
   return new Promise((resolve, reject) => {
     // Format permission flags exactly as Deno expects them
     const args = [...permissions, "-"];
     
-    console.log(`Executing: deno run ${permissions.join(' ')} -`);
-    
     // Spawn deno process with permissions
     const deno = spawn("deno", ["run", ...args], {
       stdio: ['pipe', 'pipe', 'pipe']
     });
     
-    let stdout = "";
-    let stderr = "";
+    // Pipe stdout directly to process.stdout
+    deno.stdout.pipe(process.stdout);
     
-    // Collect stdout data
-    deno.stdout.on('data', (data) => {
-      stdout += data.toString();
-    });
-    
-    // Collect stderr data
-    deno.stderr.on('data', (data) => {
-      stderr += data.toString();
-    });
+    // Pipe stderr directly to process.stderr
+    deno.stderr.pipe(process.stderr);
     
     // Handle process completion
     deno.on('close', (code) => {
-      if (stderr) {
-        console.error("Error output:", stderr);
-      }
-      
       if (code === 0) {
-        resolve(stdout);
+        resolve("Script executed successfully");
       } else {
-        reject(new Error(`Deno process exited with code ${code}: ${stderr}`));
+        reject(new Error(`Deno process exited with code ${code}`));
       }
     });
     
@@ -84,10 +71,7 @@ async function main() {
   const permissions = args.slice(1).filter(arg => arg.startsWith('--'));
   
   try {
-    console.log(`Running Deno script code`);
-    const result = await runScript(scriptCode, permissions);
-    console.log("Script output:");
-    console.log(result);
+    await runScript(scriptCode, permissions);
   } catch (error) {
     console.error("Script execution failed:", error);
     process.exit(1);
