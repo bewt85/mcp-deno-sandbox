@@ -46,36 +46,26 @@ function runScript(scriptCode: string, permissions: string[] = []) {
  * Main function to parse arguments and run the script
  */
 async function main() {
-  const args = process.argv.slice(2); // Remove 'node' and script name
-  
-  if (args.length === 0) {
-    console.error("Error: No script specified");
-    console.log("Usage: npm start -- \"<script code>\" [permission flags]");
-    console.log("Example permissions:");
-    console.log("  --allow-read            Allow file system read access");
-    console.log("  --allow-write           Allow file system write access");
-    console.log("  --allow-net             Allow network access");
-    console.log("  --allow-env             Allow environment access");
-    console.log("  --allow-run             Allow running subprocesses");
-    console.log("  --allow-read=/path      Allow read access to specific path");
-    console.log("  --deny-read=/path       Deny read access to specific path");
-    console.log("Examples:");
-    console.log("  npm start -- \"console.log('Hello')\" --allow-net --allow-read");
-    console.log("  npm start -- \"Deno.readTextFile('./file.txt')\" --allow-read=./file.txt");
-    process.exit(1);
-  }
-  
-  const scriptCode = args[0];
-  
-  // Extract permission flags (all arguments starting with --)
-  const permissions = args.slice(1).filter(arg => arg.startsWith('--'));
-  
-  try {
-    await runScript(scriptCode, permissions);
-  } catch (error) {
-    console.error("Script execution failed:", error);
-    process.exit(1);
-  }
+    // Supported permissions:
+    //   --allow-read[=<PATH>...] or -R[=<PATH>...]
+    //   --deny-read[=<PATH>...]
+    //   --allow-write[=<PATH>...] or -W[=<PATH>...]
+    //   --deny-write[=<PATH>...]
+    //   --allow-net[=<IP_OR_HOSTNAME>...] or -N[=<IP_OR_HOSTNAME>...]
+    //   --deny-net[=<IP_OR_HOSTNAME>...]
+    //   --allow-imports[=<HOSTNAME>...]
+    //   --allow-env[=<VARIABLE_NAME>...] or -E[=<VARIABLE_NAME>...]
+    //   --deny-env[=<VARIABLE_NAME>...]
+
+    const argList = process.argv.slice(3);
+    const script = process.argv[2]
+
+    try {
+        await runScript(script, argList);
+    } catch (error) {
+        console.error("Script execution failed:", (error as Error).message);
+        process.exit(1);
+    }
 }
 
 // Run the application
