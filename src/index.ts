@@ -41,12 +41,15 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
 // Handle resource reading
 server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   if (request.params.uri === "permissions://deno") {
+    let permissionsText = permissionArgs.length > 0 
+      ? `Current Deno Permissions:\n${permissionArgs.join('\n')}`
+      : "No permissions currently enabled. Code will run in a very restricted sandbox.";
+    
     return {
       contents: [
         {
           uri: "permissions://deno",
-          text: `Deno Permissions:
-${permissionArgs.join('\n')}
+          text: `${permissionsText}
 
 Supported Deno permissions:
 --allow-read[=<PATH>...] or -R[=<PATH>...]
@@ -150,7 +153,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         isError: false
       };
     } catch (error) {
-      const errorMessage = (error as Error).message;
+      let errorMessage = (error as Error).message;
+      
+      // Check if it's a permission error
+      if (errorMessage.includes("NotCapable")) {
+        // Extract the core error message, removing stack traces and extra context
+        const permissionMatch = errorMessage.match(/NotCapable: ([^\n]+)/);
+        if (permissionMatch) {
+          errorMessage = permissionMatch[1];
+        }
+      } else if (errorMessage.includes("Deno process exited with code")) {
+        // For syntax errors or runtime errors, extract the main error message
+        const syntaxMatch = errorMessage.match(/error: ([^\n]+)/);
+        if (syntaxMatch) {
+          errorMessage = syntaxMatch[1];
+        }
+      }
       
       return {
         content: [
