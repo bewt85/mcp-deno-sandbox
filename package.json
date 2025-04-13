@@ -7,9 +7,9 @@
     "build": "tsc"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "author": "Ben Taylor",
+  "license": "MIT",
+  "description": "An MCP server that allows you to run TypeScript and JavaScript code securely on your local machine using the Deno® sandbox. This server provides a controlled environment for executing code with explicit permission controls. This project is not affiliated with Deno Land LLC in any way.",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.9.0",
     "deno": "^2.2.9",
