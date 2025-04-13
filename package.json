@@ -28,5 +28,13 @@
     "nodemon": "^3.1.9",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bewt85/mcp-deno-sandbox.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bewt85/mcp-deno-sandbox/issues"
+  },
+  "homepage": "https://github.com/bewt85/mcp-deno-sandbox"
 }
