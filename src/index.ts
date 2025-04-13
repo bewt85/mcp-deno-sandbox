@@ -160,7 +160,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         // Extract the core error message, removing stack traces and extra context
         const permissionMatch = errorMessage.match(/NotCapable: ([^\n]+)/);
         if (permissionMatch) {
-          errorMessage = permissionMatch[1];
+          const requiredPermission = permissionMatch[1];
+          
+          // Extract the specific flag needed from the error message
+          const flagMatch = requiredPermission.match(/--allow-[a-z]+/);
+          const permissionFlag = flagMatch ? flagMatch[0] : "specific permissions";
+          
+          errorMessage = `The MCP server does not have sufficient permissions to run this code. 
+Required permission: ${requiredPermission}
+The server needs to be restarted with ${permissionFlag} to run this code.`;
         }
       } else if (errorMessage.includes("Deno process exited with code")) {
         // For syntax errors or runtime errors, extract the main error message
