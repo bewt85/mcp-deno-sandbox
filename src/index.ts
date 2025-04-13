@@ -1,33 +1,102 @@
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import {
+  ListToolsRequestSchema,
+  CallToolRequestSchema,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema
+} from "@modelcontextprotocol/sdk/types.js";
 import { spawn } from "child_process";
+
+// Create an MCP server
+const server = new Server(
+  {
+    name: "DenoSandbox",
+    version: "1.0.0"
+  },
+  {
+    capabilities: {
+      resources: {},
+      tools: {}
+    }
+  }
+);
+
+// Get the permissions from the command line arguments
+const permissionArgs = process.argv.slice(2);
+
+// Handle resource listing
+server.setRequestHandler(ListResourcesRequestSchema, async () => {
+  return {
+    resources: [
+      {
+        uri: "permissions://deno",
+        name: "Deno Permissions",
+        description: "List of Deno permissions available to the TypeScript sandbox"
+      }
+    ]
+  };
+});
+
+// Handle resource reading
+server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+  if (request.params.uri === "permissions://deno") {
+    return {
+      contents: [
+        {
+          uri: "permissions://deno",
+          text: `Deno Permissions:
+${permissionArgs.join('\n')}
+
+Supported Deno permissions:
+--allow-read[=<PATH>...] or -R[=<PATH>...]
+--deny-read[=<PATH>...]
+--allow-write[=<PATH>...] or -W[=<PATH>...]
+--deny-write[=<PATH>...]
+--allow-net[=<IP_OR_HOSTNAME>...] or -N[=<IP_OR_HOSTNAME>...]
+--deny-net[=<IP_OR_HOSTNAME>...]
+--allow-imports[=<HOSTNAME>...]
+--allow-env[=<VARIABLE_NAME>...] or -E[=<VARIABLE_NAME>...]
+--deny-env[=<VARIABLE_NAME>...]`
+        }
+      ]
+    };
+  }
+  
+  throw new Error(`Resource not found: ${request.params.uri}`);
+});
 
 /**
  * Executes a Deno script string with specified permissions
  * @param scriptCode String containing the script code to run
- * @param permissions Array of permission flags for Deno
- * @returns Promise that resolves when the script completes successfully
+ * @returns Promise that resolves with the script output or rejects with an error
  */
-function runScript(scriptCode: string, permissions: string[] = []) {
+function runScript(scriptCode: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    // Format permission flags exactly as Deno expects them
-    const args = [...permissions, "-"];
-    
     // Spawn deno process with permissions
-    const deno = spawn("deno", ["run", ...args], {
+    const deno = spawn("deno", ["run", ...permissionArgs, "-"], {
       stdio: ['pipe', 'pipe', 'pipe']
     });
     
-    // Pipe stdout directly to process.stdout
-    deno.stdout.pipe(process.stdout);
+    let stdout = '';
+    let stderr = '';
     
-    // Pipe stderr directly to process.stderr
-    deno.stderr.pipe(process.stderr);
+    // Collect stdout
+    deno.stdout.on('data', (data) => {
+      stdout += data.toString();
+    });
+    
+    // Collect stderr
+    deno.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
     
     // Handle process completion
     deno.on('close', (code) => {
       if (code === 0) {
-        resolve("Script executed successfully");
+        resolve(stdout);
       } else {
-        reject(new Error(`Deno process exited with code ${code}`));
+        reject(new Error(`Deno process exited with code ${code}: ${stderr}`));
       }
     });
     
@@ -42,34 +111,62 @@ function runScript(scriptCode: string, permissions: string[] = []) {
   });
 }
 
-/**
- * Main function to parse arguments and run the script
- */
-async function main() {
-    // Supported permissions:
-    //   --allow-read[=<PATH>...] or -R[=<PATH>...]
-    //   --deny-read[=<PATH>...]
-    //   --allow-write[=<PATH>...] or -W[=<PATH>...]
-    //   --deny-write[=<PATH>...]
-    //   --allow-net[=<IP_OR_HOSTNAME>...] or -N[=<IP_OR_HOSTNAME>...]
-    //   --deny-net[=<IP_OR_HOSTNAME>...]
-    //   --allow-imports[=<HOSTNAME>...]
-    //   --allow-env[=<VARIABLE_NAME>...] or -E[=<VARIABLE_NAME>...]
-    //   --deny-env[=<VARIABLE_NAME>...]
-
-    const argList = process.argv.slice(3);
-    const script = process.argv[2]
-
-    try {
-        await runScript(script, argList);
-    } catch (error) {
-        console.error("Script execution failed:", (error as Error).message);
-        process.exit(1);
-    }
-}
-
-// Run the application
-main().catch(error => {
-  console.error("Unhandled error:", error);
-  process.exit(1);
+// Define available tools
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+  return {
+    tools: [
+      {
+        name: "runTypescript",
+        description: "Runs TypeScript code in a Deno sandbox with the permissions specified when starting the server.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            code: {
+              type: "string",
+              description: "TypeScript code to execute in the Deno sandbox"
+            }
+          },
+          required: ["code"]
+        }
+      }
+    ]
+  };
 });
+
+// Handle tool calls
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  if (request.params.name === "runTypescript") {
+    try {
+      const code = request.params.arguments!.code as string;
+      const output = await runScript(code);
+      
+      return {
+        content: [
+          {
+            type: "text",
+            text: output
+          }
+        ],
+        isError: false
+      };
+    } catch (error) {
+      const errorMessage = (error as Error).message;
+      
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Error: ${errorMessage}`
+          }
+        ],
+        isError: true
+      };
+    }
+  }
+  
+  throw new Error(`Tool not found: ${request.params.name}`);
+});
+
+// Start the server with stdio transport
+const transport = new StdioServerTransport();
+server.connect(transport).catch(error => { console.log(`Unhandled Error: ${error}`); process.exit(1) });
