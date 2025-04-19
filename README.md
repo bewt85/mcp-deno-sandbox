@@ -17,6 +17,23 @@ An MCP server that allows you to run TypeScript and JavaScript code securely on 
 
 To use this MCP server with Claude Desktop, add it to your `claude_desktop_config.json`:
 
+*If you have Deno installed*
+```json
+{
+  "mcpServers": {
+    "denoSandbox": {
+      "command": "deno",
+      "args": [
+        "run",
+        "npm:mcp-deno-sandbox",
+        "--allow-net=icanhazip.com"
+      ]
+    }
+  }
+}
+```
+
+*If you have Nodejs installed*
 ```json
 {
   "mcpServers": {
@@ -100,14 +117,6 @@ Test with the MCP Inspector:
 npx @modelcontextprotocol/inspector npx mcp-deno-sandbox --allow-net
 ```
 
-When you want to do a release:
-* update the version in `package.json` to X.Y.Z
-* merge your changes
-* make a release in GitHub vX.Y.Z
-* wait for it to be automatically deployed to NPM
-
-### Example Tests
-
 Try these examples in the inspector:
 
 1. Basic arithmetic (works without permissions):
@@ -125,6 +134,15 @@ Try these examples in the inspector:
    const text = Deno.readTextFileSync('/path/to/file.txt');
    console.log(text);
    ```
+
+## Releases
+
+When you want to do a release:
+* update the version in `package.json` to X.Y.Z
+* merge your changes
+* make a release in GitHub vX.Y.Z
+* wait for it to be automatically deployed to NPM
+
 
 ## License
 
