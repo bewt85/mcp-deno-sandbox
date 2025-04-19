@@ -8,7 +8,17 @@ import {
   ListResourcesRequestSchema,
   ReadResourceRequestSchema
 } from "@modelcontextprotocol/sdk/types.js";
-import { spawn } from "child_process";
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import * as os from 'os';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+
+// Promisify execFile
+const execFileAsync = promisify(execFile);
+
+// Set umask at the top level to ensure files are only accessible by the runner
+process.umask(0o077);
 
 // Create an MCP server
 const server = new Server(
@@ -74,46 +84,50 @@ Supported Deno permissions:
 /**
  * Executes a Deno script string with specified permissions
  * @param scriptCode String containing the script code to run
+ * @param permissions Array of permission flags to pass to Deno
  * @returns Promise that resolves with the script output or rejects with an error
  */
-function runScript(scriptCode: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    // Spawn deno process with permissions
-    const deno = spawn("deno", ["run", ...permissionArgs, "-"], {
-      stdio: ['pipe', 'pipe', 'pipe']
+export async function runDenoScript(scriptCode: string, permissions: string[]): Promise<string> {  
+  // Create temporary directory
+  let tempDir = '';
+    
+  try {
+    // Create temporary directory
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'deno-sandbox-'));
+    
+    // Create deno.json configuration file
+    const denoConfigPath = path.join(tempDir, 'deno.json');
+    await fs.writeFile(denoConfigPath, JSON.stringify({
+      nodeModulesDir: "auto"
+    }, null, 4), { mode: 0o600 }); // Only owner can read/write
+    
+    // Write the script to a file
+    const scriptPath = path.join(tempDir, 'script.ts');
+    await fs.writeFile(scriptPath, scriptCode, { mode: 0o600 }); // Only owner can read/write
+    
+    // Add temporary directory read permission
+    const allPermissions = [...permissions, `--allow-read=${tempDir}`];
+    
+    // Execute the script file with Deno
+    const { stdout } = await execFileAsync('deno', ['run', '--config', denoConfigPath, ...allPermissions, scriptPath], {
+      cwd: tempDir
     });
     
-    let stdout = '';
-    let stderr = '';
-    
-    // Collect stdout
-    deno.stdout.on('data', (data) => {
-      stdout += data.toString();
-    });
-    
-    // Collect stderr
-    deno.stderr.on('data', (data) => {
-      stderr += data.toString();
-    });
-    
-    // Handle process completion
-    deno.on('close', (code) => {
-      if (code === 0) {
-        resolve(stdout);
-      } else {
-        reject(new Error(`Deno process exited with code ${code}: ${stderr}`));
+    return stdout;
+  } catch (error) {
+    // Handle and wrap error
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Error running Deno script: ${errorMessage}`);
+  } finally {
+    // Clean up the temporary directory
+    if (tempDir) {
+      try {
+        await fs.rm(tempDir, { recursive: true, force: true });
+      } catch (cleanupError) {
+        console.error(`Failed to remove temporary directory: ${tempDir}`);
       }
-    });
-    
-    // Handle process errors
-    deno.on('error', (err) => {
-      reject(new Error(`Failed to start Deno process: ${err.message}`));
-    });
-    
-    // Send script code to stdin and close the stream
-    deno.stdin.write(scriptCode);
-    deno.stdin.end();
-  });
+    }
+  }
 }
 
 // Define available tools
@@ -143,7 +157,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   if (request.params.name === "runTypescript") {
     try {
       const code = request.params.arguments!.code as string;
-      const output = await runScript(code);
+      const output = await runDenoScript(code, permissionArgs);
       
       return {
         content: [
@@ -155,7 +169,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         isError: false
       };
     } catch (error) {
-      let errorMessage = (error as Error).message;
+      let errorMessage = error instanceof Error ? error.message : String(error);
       
       // Check if it's a permission error
       if (errorMessage.includes("NotCapable")) {
@@ -197,4 +211,7 @@ The server needs to be restarted with ${permissionFlag} to run this code.`;
 
 // Start the server with stdio transport
 const transport = new StdioServerTransport();
-server.connect(transport).catch(error => { console.log(`Unhandled Error: ${error}`); process.exit(1) });
+server.connect(transport).catch(error => { 
+  console.log(`Unhandled Error: ${error instanceof Error ? error.message : String(error)}`); 
+  process.exit(1);
+});
