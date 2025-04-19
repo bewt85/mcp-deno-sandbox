@@ -1,8 +1,11 @@
 {
   "name": "mcp-deno-sandbox",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "mcp-deno-sandbox": "./dist/index.js"
+  },
   "files": [
     "dist"
   ],

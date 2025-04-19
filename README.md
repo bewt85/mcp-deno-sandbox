@@ -19,9 +19,9 @@ To use this MCP server with Claude Desktop, add it to your `claude_desktop_confi
 {
   "mcpServers": {
     "denoSandbox": {
-      "command": "node",
+      "command": "npx",
       "args": [
-        "/absolute/path/to/deno-mcp/dist/index.js",
+        "mcp-deno-sandbox",
         "--allow-net=icanhazip.com"
       ]
     }
@@ -63,8 +63,8 @@ Remember that any code executed has access to the permissions you've provided, s
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/deno-mcp.git
-cd deno-mcp
+git clone https://github.com/bewt85/mcp-deno-sandbox.git
+cd mcp-deno-sandbox
 
 # Install dependencies
 npm install
@@ -81,7 +81,7 @@ npm run build
 Test with the MCP Inspector:
 
 ```bash
-npx @modelcontextprotocol/inspector node dist/index.js --allow-net
+npx @modelcontextprotocol/inspector npx mcp-deno-sandbox --allow-net
 ```
 
 ### Example Tests
