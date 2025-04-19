@@ -1,5 +1,7 @@
 # Deno Sandbox MCP Server
 
+## Don't use me yet: WIP
+
 An MCP server that allows you to run TypeScript and JavaScript code securely on your local machine using the Deno® sandbox. This server provides a controlled environment for executing code with explicit permission controls.
 
 > **Note:** This project is not affiliated with Deno Land LLC in any way. I'm just a fan of the Deno® runtime. "Deno" is a registered trademark of Deno Land LLC.
