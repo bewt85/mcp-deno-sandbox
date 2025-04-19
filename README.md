@@ -1,21 +1,25 @@
 # Deno Sandbox MCP Server
 
-## Don't use me yet: WIP
-
 An MCP server that allows you to run TypeScript and JavaScript code securely on your local machine using the Deno® sandbox. This server provides a controlled environment for executing code with explicit permission controls.
 
 > **Note:** This project is not affiliated with Deno Land LLC in any way. I'm just a fan of the Deno® runtime. "Deno" is a registered trademark of Deno Land LLC.
 
 ## Features
 
-- Execute TypeScript/JavaScript code in a secure Deno® sandbox
+- Restricted runtime environment for TypeScript/JavaScript code
 - Granular permission control via command-line flags
 - Clear error messages for permission issues
 - Resource that lists available permissions
 
 ## Usage with Claude Desktop
 
-To use this MCP server with Claude Desktop, add it to your `claude_desktop_config.json`:
+This MCP should work with a range of MCP clients.
+
+To use this MCP server with Claude Desktop, add it to your `claude_desktop_config.json` in:
+
+* macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+* Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+
 
 *If you have Deno installed*
 ```json
@@ -48,27 +52,27 @@ To use this MCP server with Claude Desktop, add it to your `claude_desktop_confi
 }
 ```
 
-### Permission Examples and Tradeoffs
+### Permission Examples
+
+You need to set the permissions at runtime; if you change them you need to restart the server.
+
+The permissions are the same as the [Deno® permissions](https://docs.deno.com/runtime/fundamentals/security/) and are just passed through.
+
+*Examples*
 
 1. **Network Access**
    - Permissive: `--allow-net`
      - Allows all network access
-     - Useful for web scraping, API calls
-     - Tradeoff: Code can access any website or API
    - Restricted: `--allow-net=api.github.com,example.com`
      - Allows network access only to specific domains
-     - Safer while still enabling useful functionality
-     - Tradeoff: Must know domains in advance
 
 2. **File System**
    - Permissive: `--allow-read --allow-write`
      - Full file system access
-     - Useful for data processing applications
-     - Tradeoff: High security risk, can read/modify any files
+     - Tradeoff: Rogue LLMs can access your dotfiles and anything else you can (including the file it can edit to give itself more permissions)
    - Restricted: `--allow-read=/tmp --allow-write=/tmp`
      - Limited to specific directories
      - Good for processing isolated files
-     - Tradeoff: Limited functionality, but much safer
 
 For a complete list of permissions and detailed documentation, see [Deno® Security](https://docs.deno.com/runtime/fundamentals/security/).
 
