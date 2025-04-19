@@ -59,9 +59,7 @@ For a complete list of permissions and detailed documentation, see [Deno® Secur
 
 This server runs code with precisely the permissions specified when starting the server. No additional permissions will be granted at runtime.
 
-Remember that any code executed has access to the permissions you've provided, so be careful about what permissions you enable.  Remember malicious people can use prompt injection to trick your prefered language model into running bad things on your computer.
-
-## Installation
+## Development
 
 ```bash
 # Clone the repository
@@ -72,12 +70,16 @@ cd mcp-deno-sandbox
 npm install
 ```
 
-## Development
-
-Build the TypeScript code:
+Check the code formatting and types:
 
 ```bash
-npm run build
+npm run checks
+```
+
+Fix some issues automatically:
+
+```bash
+npm run fix
 ```
 
 Test with the MCP Inspector:
@@ -85,6 +87,12 @@ Test with the MCP Inspector:
 ```bash
 npx @modelcontextprotocol/inspector npx mcp-deno-sandbox --allow-net
 ```
+
+When you want to do a release:
+* update the version in `package.json` to X.Y.Z
+* merge your changes
+* make a release in GitHub vX.Y.Z
+* wait for it to be automatically deployed to NPM
 
 ### Example Tests
 
