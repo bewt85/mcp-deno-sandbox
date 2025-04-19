@@ -1,4 +1,4 @@
-import { runDenoScript } from '../index';
+import { runDenoScript } from '../runDeno';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
