@@ -57,11 +57,21 @@ For a complete list of permissions and detailed documentation, see [Deno® Secur
 
 ## Security Considerations
 
-This server runs code with precisely the permissions specified when starting the server. No additional permissions will be granted at runtime.
+This server runs code using the permissions specified when starting the server. These permissions are passed through to the Deno® runtime.
 
-Remember that any code executed has access to the permissions you've provided, so be careful about what permissions you enable.  Remember malicious people can use prompt injection to trick your prefered language model into running bad things on your computer.
+Remember that any code executed has access to the permissions you've provided, so be careful about what permissions you enable.  
 
-## Installation
+The sandbox is completely undermined by:
+* giving blanket FFI or execution permissions
+* allowing write access to the file which manages the server permissions (e.g. `claude_desktop_config.json`)
+
+You should also think carefully about read permissions to sensitive `dotfiles` you have (e.g. with credentials for AWS, NPM, OpenAI); especially if you have granted network access.
+
+Remember malicious people can use prompt injection to trick your prefered language model into running bad things on your computer.  Maybe they can hide some invisible text in a PDF which you cannot read or in the middle of a long document you ask it to summarise.
+
+Deno® has some [additional suggestions](https://docs.deno.com/runtime/fundamentals/security/#executing-untrusted-code) if you would like even more isolation for untrusted code.
+
+## Development
 
 ```bash
 # Clone the repository
@@ -72,12 +82,16 @@ cd mcp-deno-sandbox
 npm install
 ```
 
-## Development
-
-Build the TypeScript code:
+Check the code formatting and types:
 
 ```bash
-npm run build
+npm run checks
+```
+
+Fix some issues automatically:
+
+```bash
+npm run fix
 ```
 
 Test with the MCP Inspector:
@@ -85,6 +99,12 @@ Test with the MCP Inspector:
 ```bash
 npx @modelcontextprotocol/inspector npx mcp-deno-sandbox --allow-net
 ```
+
+When you want to do a release:
+* update the version in `package.json` to X.Y.Z
+* merge your changes
+* make a release in GitHub vX.Y.Z
+* wait for it to be automatically deployed to NPM
 
 ### Example Tests
 
