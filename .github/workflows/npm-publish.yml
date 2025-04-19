@@ -1,0 +1,61 @@
+name: NPM Publish
+
+on:
+  # Publish when creating a new release
+  release:
+    types: [created]
+  
+  # Optionally enable manual triggering
+  workflow_dispatch:
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Verify version matches
+        run: |
+          # Extract version from package.json
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          
+          # For workflow_dispatch, we need to get the latest tag
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            # Get latest tag from GitHub
+            GIT_TAG=$(git describe --tags --abbrev=0)
+          else
+            # For release event, use the release tag
+            GIT_TAG=${{ github.ref_name }}
+          fi
+          
+          # Remove 'v' prefix if present
+          GIT_TAG=${GIT_TAG#v}
+          
+          echo "Package.json version: $PKG_VERSION"
+          echo "Git tag version: $GIT_TAG"
+          
+          # Compare versions
+          if [ "$PKG_VERSION" != "$GIT_TAG" ]; then
+            echo "::error::Version mismatch! package.json ($PKG_VERSION) does not match git tag ($GIT_TAG)"
+            exit 1
+          else
+            echo "Versions match! Proceeding with publish..."
+          fi
+      
+      - name: Build
+        run: npm run build
+      
+      # Your package.json already has prepublishOnly script that runs build
+      - name: Publish to npm
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
