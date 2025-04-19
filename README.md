@@ -4,12 +4,18 @@ An MCP server that allows you to run TypeScript and JavaScript code securely on 
 
 > **Note:** This project is not affiliated with Deno Land LLC in any way. I'm just a fan of the Deno® runtime. "Deno" is a registered trademark of Deno Land LLC.
 
+![Screenshot of a cowsay cow saying hello](./docs/cowsay.png)
+
 ## Features
 
 - Restricted runtime environment for TypeScript/JavaScript code
 - Granular permission control via command-line flags
 - Clear error messages for permission issues
 - Resource that lists available permissions
+
+## Non Features
+
+I would like to keep this codebase as simple as possible so that someone can read it quickly and tell that it is not going to do anything dodgy to their machine.  I therefore am going to try and avoid the temptation to add features which make the code harder to read and leave it to others to build the cleverer mcp servers.
 
 ## Usage with Claude Desktop
 
@@ -138,6 +144,10 @@ Try these examples in the inspector:
    const text = Deno.readTextFileSync('/path/to/file.txt');
    console.log(text);
    ```
+
+## Contributing
+
+I don't that a lot of spare time so I will not be able to engage with most feature requests / contributions.  It is probably better to fork the repository if you would like to add something. Apologies. 
 
 ## Releases
 
