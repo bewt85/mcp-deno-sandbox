@@ -10,6 +10,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 
 import { runDenoScript } from './runDeno';
+import { runPythonScript } from './runPython';
 
 // Create an MCP server
 const server = new Server(
@@ -35,7 +36,7 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
       {
         uri: 'permissions://deno',
         name: 'Deno Permissions',
-        description: 'List of Deno permissions available to the TypeScript sandbox',
+        description: 'List of Deno permissions available to the TypeScript and Python sandboxes',
       },
     ],
   };
@@ -92,6 +93,21 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ['code'],
         },
       },
+      {
+        name: 'runPython',
+        description:
+          'Runs Python code in a Deno-based Pyodide sandbox with the permissions specified when starting the server.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            code: {
+              type: 'string',
+              description: 'Python code to execute in the sandbox',
+            },
+          },
+          required: ['code'],
+        },
+      },
     ],
   };
 });
@@ -102,6 +118,33 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     try {
       const code = request.params.arguments!.code as string;
       const output = await runDenoScript(code, permissionArgs);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: output,
+          },
+        ],
+        isError: false,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error: ${errorMessage}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  } else if (request.params.name === 'runPython') {
+    try {
+      const code = request.params.arguments!.code as string;
+      const output = await runPythonScript(code, permissionArgs);
 
       return {
         content: [

@@ -4,6 +4,16 @@ import * as os from 'os';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 
+export interface Logger {
+  log: (...args: any) => any;
+  error: (...args: any) => any;
+}
+
+export const DEFAULT_LOGGER: Logger = {
+  log: (...args: any) => console.log(...args),
+  error: (...args: any) => console.error(...args),
+}
+
 // Promisify execFile
 const execFileAsync = promisify(execFile);
 
@@ -15,7 +25,7 @@ process.umask(0o077);
  * @param error The error object or string to format
  * @returns A formatted error message
  */
-function formatError(error: Error | string): string {
+export function formatError(error: Error | string): string {
   let errorMessage: string = error instanceof Error ? error.message : String(error);
 
   // Check if it's a permission error
@@ -62,7 +72,7 @@ The server needs to be restarted with ${permissionFlag} to run this code.${addit
  * @param permissions Array of permission flags to pass to Deno
  * @returns Promise that resolves with the script output or rejects with an error
  */
-export async function runDenoScript(scriptCode: string, permissions: string[]): Promise<string> {
+export async function runDenoScript(scriptCode: string, permissions: string[], logger: Logger = DEFAULT_LOGGER): Promise<string> {
   // Create temporary directory
   let tempDir = '';
 
@@ -89,12 +99,13 @@ export async function runDenoScript(scriptCode: string, permissions: string[]): 
     await fs.writeFile(scriptPath, scriptCode, { mode: 0o600 }); // Only owner can read/write
 
     // Add temporary directory read permission
-    const allPermissions = [...permissions, `--allow-read=${tempDir}`];
+    const extraPermissions = [`--allow-read=${tempDir}`]
+    const allPermissions = [...permissions, ...extraPermissions];
 
     // Execute the script file with Deno
     const { stdout } = await execFileAsync(
       'deno',
-      ['run', '--config', denoConfigPath, ...allPermissions, scriptPath],
+      ['run', '--node-modules-dir=auto', ...allPermissions, scriptPath],
       {
         cwd: tempDir,
       }
@@ -111,7 +122,7 @@ export async function runDenoScript(scriptCode: string, permissions: string[]): 
       try {
         await fs.rm(tempDir, { recursive: true, force: true });
       } catch (cleanupError) {
-        console.error(`Failed to remove temporary directory: ${tempDir}`);
+        logger.error(`Failed to remove temporary directory: ${tempDir}`);
       }
     }
   }
