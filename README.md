@@ -124,7 +124,7 @@ npm run fix
 Test with the MCP Inspector:
 
 ```bash
-npx @modelcontextprotocol/inspector npx mcp-deno-sandbox --allow-net
+npx @modelcontextprotocol/inspector ./node_modules/.bin/ts-node src/index.ts
 ```
 
 Try these examples in the inspector:
