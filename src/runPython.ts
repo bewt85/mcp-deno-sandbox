@@ -43,14 +43,13 @@ export async function runPythonScript(scriptCode: string, permissions: string[],
     await fs.writeFile(pythonImportScriptPath, importScript, { mode: 0o600 }); // Only owner can read/write
 
     // Execute the script file with Deno
-    const response = await execFileAsync(
+    await execFileAsync(
       'deno',
       ['run', '--node-modules-dir=auto', ...importPermissions, pythonImportScriptPath],
       {
         cwd: tempDir,
       }
     );
-    logger.error({ pythonImportScriptPath, stderr: response.stderr, stdout: response.stdout });
 
     // Add temporary directory read permission
     const extraPermissions = [`--allow-read=${tempDir}`]
@@ -70,14 +69,13 @@ export async function runPythonScript(scriptCode: string, permissions: string[],
     await fs.writeFile(pythonExecuteScriptPath, denoScript, { mode: 0o600 }); // Only owner can read/write
 
     // Execute the script file with Deno
-    const { stdout, stderr } = await execFileAsync(
+    const { stdout } = await execFileAsync(
       'deno',
       ['run', '--node-modules-dir=auto', ...allPermissions, pythonExecuteScriptPath],
       {
         cwd: tempDir,
       }
     );
-    logger.error({ pythonExecuteScriptPath, stderr, stdout });
 
     return stdout;
   } catch (error) {
