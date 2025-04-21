@@ -13,7 +13,7 @@ const execFileAsync = promisify(execFile);
 process.umask(0o077);
 
 /**
- * Executes a Python script string with specified permissions
+ * Executes a Python script string with specified permissions using pyodide
  * @param scriptCode String containing the script code to run
  * @param permissions Array of permission flags to pass to Deno sanbox
  * @returns Promise that resolves with the script output or rejects with an error
@@ -30,13 +30,19 @@ export async function runPythonScript(scriptCode: string, permissions: string[],
     const scriptPath = path.join(tempDir, 'script.py');
     await fs.writeFile(scriptPath, scriptCode, { mode: 0o600 }); // Only owner can read/write
 
-    const importPermissions = [`--allow-read=${tempDir}`, `--allow-write=${tempDir}/node_modules/`, `--allow-net=cdn.jsdelivr.net`]
+    // Python code is run in Deno using pyodide
+    // We run two separate Deno processes sequentially.
+    // In the first, we installs pyodide, find the dependencies, and download them.
+    // This needs some extra permissions (to write the dependencies and to fetch them from a CDN)
+    // and doesn't need the user specified permissions.  We therefore don't execute the user script
+    // yet; we use a second Deno process with the user specified permissions in a minute.
     const importScript = `
-    import pyodideModule from "npm:pyodide/pyodide.js";
+    import pyodideModule from "npm:pyodide/pyodide.js";  // Downloads pyodide
     const pyodide = await pyodideModule.loadPyodide();
     const decoder = new TextDecoder("utf-8");
     const scriptBytes = await Deno.readFile("script.py");
     const scriptContent = decoder.decode(scriptBytes);
+    // This is the line which inspects the python script for dependencies and fetches them.
     await pyodide.loadPackagesFromImports(scriptContent, { messageCallback: console.error, errorCallback: console.error });
     `
     const pythonImportScriptPath = path.join(tempDir, '.pythonImportScriptPath.ts');
@@ -45,15 +51,18 @@ export async function runPythonScript(scriptCode: string, permissions: string[],
     // Execute the script file with Deno
     await execFileAsync(
       'deno',
-      ['run', '--node-modules-dir=auto', ...importPermissions, pythonImportScriptPath],
+      [
+        'run',
+        '--node-modules-dir=auto',  // Creates a new node_modules in tempDir into which pyodide and dependencies are installed
+        `--allow-read=${tempDir}`,  // So the python script can be found
+        `--allow-write=${tempDir}/node_modules/`, // So the pyodide and dependencies can be downloaded
+        `--allow-net=cdn.jsdelivr.net`,  // Where the pyodide and dependencies come from
+        pythonImportScriptPath
+      ],
       {
         cwd: tempDir,
       }
     );
-
-    // Add temporary directory read permission
-    const extraPermissions = [`--allow-read=${tempDir}`]
-    const allPermissions = [...permissions, ...extraPermissions];
 
     // Write the deno wrapper script to a file
     const pythonExecuteScriptPath = path.join(tempDir, '.pythonExecuteScriptPath.ts');
@@ -63,6 +72,8 @@ export async function runPythonScript(scriptCode: string, permissions: string[],
     const decoder = new TextDecoder("utf-8");
     const scriptBytes = await Deno.readFile("script.py");
     const scriptContent = decoder.decode(scriptBytes);
+    // We need to load the dependencies again, but this time they are cached.
+    // I disabled the integrity checking because we literally just installed them and we don't necessarily have web access any more.
     await pyodide.loadPackagesFromImports(scriptContent, { checkIntegrity: false, messageCallback: console.error, errorCallback: console.error });
     await pyodide.runPythonAsync(scriptContent);
     `
@@ -71,7 +82,14 @@ export async function runPythonScript(scriptCode: string, permissions: string[],
     // Execute the script file with Deno
     const { stdout } = await execFileAsync(
       'deno',
-      ['run', '--node-modules-dir=auto', '--v8-flags=--experimental-wasm-stack-switching', ...allPermissions, pythonExecuteScriptPath],
+      [
+        'run',
+        '--node-modules-dir=auto',  // Creates a new node_modules in tempDir into which pyodide and dependencies are installed
+        '--v8-flags=--experimental-wasm-stack-switching',  // We need this feature so that urllib / requests work
+        `--allow-read=${tempDir}`,  // So the python script and dependencies can be loaded without adding network access
+        ...permissions,  // The user specified permissions
+        pythonExecuteScriptPath
+      ],
       {
         cwd: tempDir,
       }
