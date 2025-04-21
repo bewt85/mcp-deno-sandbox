@@ -4,7 +4,7 @@ import * as os from 'os';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 
-import { DEFAULT_LOGGER, formatError, Logger } from './runDeno';
+import { DEFAULT_LOGGER, formatError, Logger } from './logging';
 
 // Promisify execFile
 const execFileAsync = promisify(execFile);
