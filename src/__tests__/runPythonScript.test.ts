@@ -20,7 +20,8 @@ describe('Python Sandbox Integration Tests', () => {
   });
 
   test('it can execute basic YAML parsing without any permissions', async () => {
-    const result = await runPythonScript(`
+    const result = await runPythonScript(
+      `
 import yaml
 import json
 d = yaml.safe_load("""
@@ -30,8 +31,10 @@ bar:
     baz: [1,2,3]
 """)
 print(json.dumps(d))
-    `, []);
-    
+    `,
+      []
+    );
+
     // Parse the JSON output and check the structure
     const parsed = JSON.parse(result.trim());
     expect(parsed.foo).toBe(1);
@@ -40,7 +43,8 @@ print(json.dumps(d))
 
   test('it can read and write files in a virtual filesystem', async () => {
     // Test basic file operations in Pyodide's virtual file system
-    const result = await runPythonScript(`
+    const result = await runPythonScript(
+      `
 with open("test_file.txt", "w") as f:
     f.write("Hello from Python")
 
@@ -48,9 +52,11 @@ with open("test_file.txt", "r") as f:
     content = f.read()
     
 print(content)
-    `, []);
-    
-    expect(result.trim()).toBe("Hello from Python");
+    `,
+      []
+    );
+
+    expect(result.trim()).toBe('Hello from Python');
   });
 
   test('it cannot access host files directly', async () => {
@@ -66,7 +72,7 @@ with open("${testFilePath}", "r") as f:
     content = f.read()
     print(content)
         `,
-        ["--allow-read"]
+        ['--allow-read']
       )
     ).rejects.toThrow();
   });
@@ -85,7 +91,8 @@ print(response.text)
   }, 30000);
 
   test('it can execute numpy operations without permissions', async () => {
-    const result = await runPythonScript(`
+    const result = await runPythonScript(
+      `
 import numpy as np
 import json
 
@@ -97,8 +104,10 @@ result = {
 }
 
 print(json.dumps(result))
-    `, []);
-    
+    `,
+      []
+    );
+
     const parsed = JSON.parse(result.trim());
     expect(parsed.mean).toBe(3);
     expect(parsed.sum).toBe(15);

@@ -14,24 +14,21 @@ const permissionArgs = process.argv.slice(2);
 // Create an MCP server using the higher-level McpServer class
 const server = new McpServer({
   name: 'DenoSandbox',
-  version: '1.0.0'
+  version: '1.0.0',
 });
 
 // Add a resource for Deno permissions
-server.resource(
-  'deno-permissions',
-  'permissions://deno',
-  async (uri) => {
-    let permissionsText =
-      permissionArgs.length > 0
-        ? `Current Deno Permissions:\n${permissionArgs.join('\n')}`
-        : 'No permissions currently enabled. Code will run in a very restricted sandbox.';
+server.resource('deno-permissions', 'permissions://deno', async (uri) => {
+  let permissionsText =
+    permissionArgs.length > 0
+      ? `Current Deno Permissions:\n${permissionArgs.join('\n')}`
+      : 'No permissions currently enabled. Code will run in a very restricted sandbox.';
 
-    return {
-      contents: [
-        {
-          uri: uri.href,
-          text: `${permissionsText}
+  return {
+    contents: [
+      {
+        uri: uri.href,
+        text: `${permissionsText}
 
 Supported Deno permissions:
 --allow-read[=<PATH>...] or -R[=<PATH>...]
@@ -42,18 +39,17 @@ Supported Deno permissions:
 --deny-net[=<IP_OR_HOSTNAME>...]
 --allow-imports[=<HOSTNAME>...]
 --allow-env[=<VARIABLE_NAME>...] or -E[=<VARIABLE_NAME>...]
---deny-env[=<VARIABLE_NAME>...]`
-        }
-      ]
-    };
-  }
-);
+--deny-env[=<VARIABLE_NAME>...]`,
+      },
+    ],
+  };
+});
 
 // Add runTypescript tool
 server.tool(
   'runTypescript',
-  { 
-    code: z.string().describe('TypeScript code to execute in the Deno sandbox')
+  {
+    code: z.string().describe('TypeScript code to execute in the Deno sandbox'),
   },
   async ({ code }) => {
     try {
@@ -62,9 +58,9 @@ server.tool(
         content: [
           {
             type: 'text',
-            text: output
-          }
-        ]
+            text: output,
+          },
+        ],
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -72,10 +68,10 @@ server.tool(
         content: [
           {
             type: 'text',
-            text: `Error: ${errorMessage}`
-          }
+            text: `Error: ${errorMessage}`,
+          },
         ],
-        isError: true
+        isError: true,
       };
     }
   }
@@ -84,8 +80,8 @@ server.tool(
 // Add runPython tool
 server.tool(
   'runPython',
-  { 
-    code: z.string().describe('Python code to execute in the sandbox')
+  {
+    code: z.string().describe('Python code to execute in the sandbox'),
   },
   async ({ code }) => {
     try {
@@ -94,9 +90,9 @@ server.tool(
         content: [
           {
             type: 'text',
-            text: output
-          }
-        ]
+            text: output,
+          },
+        ],
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -104,10 +100,10 @@ server.tool(
         content: [
           {
             type: 'text',
-            text: `Error: ${errorMessage}`
-          }
+            text: `Error: ${errorMessage}`,
+          },
         ],
-        isError: true
+        isError: true,
       };
     }
   }
