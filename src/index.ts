@@ -46,6 +46,7 @@ Deno supports the following additional permissions but these need to be configur
 // Add runTypescript tool
 server.tool(
   'runTypescript',
+  `Executes TypeScript/JavaScript code in a Deno sandbox. Returns stdout; use console.log(...) to print results.\n\n${permissionsText}`,
   {
     code: z.string().describe('TypeScript code to execute in the Deno sandbox'),
   },
@@ -78,6 +79,7 @@ server.tool(
 // Add runPython tool
 server.tool(
   'runPython',
+  `Executes Python using Pyodide in a Deno sandbox. Imports many commont packages automatically (e.g. numpy). Returns stdout; use print(...) to print results.\n\n${permissionsText}\n\nThere is an issue with file writing.  You need to run 'import js; js.fs.writeFileSync(PATH, CONTENT)'.  Other network and filesystem access works fine if you have permission`,
   {
     code: z.string().describe('Python code to execute in the sandbox'),
   },
