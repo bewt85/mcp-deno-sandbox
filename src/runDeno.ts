@@ -80,32 +80,20 @@ export async function runDenoScript(scriptCode: string, permissions: string[], l
     // Create temporary directory
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'deno-sandbox-'));
 
-    // Create deno.json configuration file
-    const denoConfigPath = path.join(tempDir, 'deno.json');
-    await fs.writeFile(
-      denoConfigPath,
-      JSON.stringify(
-        {
-          nodeModulesDir: 'auto',
-        },
-        null,
-        4
-      ),
-      { mode: 0o600 }
-    ); // Only owner can read/write
-
     // Write the script to a file
     const scriptPath = path.join(tempDir, 'script.ts');
     await fs.writeFile(scriptPath, scriptCode, { mode: 0o600 }); // Only owner can read/write
 
-    // Add temporary directory read permission
-    const extraPermissions = [`--allow-read=${tempDir}`]
-    const allPermissions = [...permissions, ...extraPermissions];
-
     // Execute the script file with Deno
     const { stdout } = await execFileAsync(
       'deno',
-      ['run', '--node-modules-dir=auto', ...allPermissions, scriptPath],
+      [
+        'run',
+        '--node-modules-dir=auto',  // Creates a new node_modules in tempDir into which dependencies are installed
+        `--allow-read=${tempDir}`,  // So the script can be found
+        ...permissions,
+        scriptPath
+      ],
       {
         cwd: tempDir,
       }
