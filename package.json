@@ -1,6 +1,6 @@
 {
   "name": "mcp-deno-sandbox",
-  "version": "0.1.7",
+  "version": "0.2.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
@@ -13,8 +13,8 @@
     "start": "ts-node src/index.ts",
     "build": "tsc",
     "prepublishOnly": "npm run build",
-    "test": "jest",
-    "test:watch": "jest --watch",
+    "test": "jest --no-colors",
+    "test:watch": "jest --no-colors --watch",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
