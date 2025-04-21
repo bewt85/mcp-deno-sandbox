@@ -71,7 +71,7 @@ export async function runPythonScript(scriptCode: string, permissions: string[],
     // Execute the script file with Deno
     const { stdout } = await execFileAsync(
       'deno',
-      ['run', '--node-modules-dir=auto', ...allPermissions, pythonExecuteScriptPath],
+      ['run', '--node-modules-dir=auto', '--v8-flags=--experimental-wasm-stack-switching', ...allPermissions, pythonExecuteScriptPath],
       {
         cwd: tempDir,
       }
