@@ -94,7 +94,7 @@ describe('Deno Sandbox Integration Tests', () => {
       writePermissions
     );
 
-    const writeResult = await fs.readFile(writeFilePath, { encoding: 'utf8'});
+    const writeResult = await fs.readFile(writeFilePath, { encoding: 'utf8' });
     expect(writeResult.trim()).toBe('Written by Deno');
   });
 

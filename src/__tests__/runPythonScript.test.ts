@@ -102,7 +102,7 @@ with open("${testFilePath}", "r") as f:
 
   test('it can write to host files when appropriate permissions are granted', async () => {
     const testFilePath = path.join(tempDir, 'writable-file.txt');
-    
+
     // Write to a file with proper permissions
     await runPythonScript(
       `
@@ -119,7 +119,7 @@ js.fs.writeFileSync("${testFilePath}", "Successfully wrote to host file")
 
   test('it cannot write to host files without appropriate permissions', async () => {
     const testFilePath = path.join(tempDir, 'no-write-file.txt');
-    
+
     // Try to write to a file without permissions
     await expect(
       runPythonScript(
@@ -130,7 +130,7 @@ js.fs.writeFileSync("${testFilePath}", "This should not work")
         [] // No permissions granted
       )
     ).rejects.toThrow();
-    
+
     // Verify the file doesn't exist
     await expect(fs.access(testFilePath)).rejects.toThrow();
   });

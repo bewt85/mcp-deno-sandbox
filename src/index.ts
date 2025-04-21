@@ -10,9 +10,9 @@ import { runPythonScript } from './runPython';
 // Get the permissions from the command line arguments
 const permissionArgs = process.argv.slice(2);
 const permissionsText =
-permissionArgs.length > 0
-  ? `Current Deno Permissions:\n${permissionArgs.join('\n')}`
-  : 'No permissions currently enabled. Code will run in a very restricted sandbox.';
+  permissionArgs.length > 0
+    ? `Current Deno Permissions:\n${permissionArgs.join('\n')}`
+    : 'No permissions currently enabled. Code will run in a very restricted sandbox.';
 
 // Create an MCP server using the higher-level McpServer class
 const server = new McpServer({

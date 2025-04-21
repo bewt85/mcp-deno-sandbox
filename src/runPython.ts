@@ -15,7 +15,7 @@ process.umask(0o077);
 function parseReadablePaths(permissions: string[]): string[] {
   const readablePaths = new Set<string>();
 
-  const filePermissionArguments = ["-R", "--allow-read", "-W", "--allow-write"]
+  const filePermissionArguments = ['-R', '--allow-read', '-W', '--allow-write'];
 
   for (const permission of permissions) {
     // Check if this is a full read permission
@@ -30,7 +30,7 @@ function parseReadablePaths(permissions: string[]): string[] {
       const argumentPrefix = `${p}=`;
       // e.g. '--allow-read='
       if (permission.startsWith(argumentPrefix)) {
-        const paths = permission.substring(argumentPrefix.length).split(",");
+        const paths = permission.substring(argumentPrefix.length).split(',');
         for (const path_str of paths) {
           if (path_str) {
             // Convert to absolute path if it's not already
@@ -52,12 +52,12 @@ function isChild(a: string, b: string): boolean {
   // Remove the trailing separator
   const aNorm = a.endsWith(path.sep) ? a.slice(0, a.length - 1) : a;
   const bNorm = b.endsWith(path.sep) ? b.slice(0, b.length - 1) : b;
-  
+
   if (a === b) return false; // handle identical paths separately
   const aPaths = aNorm.split(path.sep);
   const bPaths = bNorm.split(path.sep);
   if (aPaths.length <= bPaths.length) return false;
-  
+
   for (let i = 0; i < bPaths.length; i++) {
     if (aPaths[i] !== bPaths[i]) return false;
   }
@@ -73,7 +73,7 @@ function removeRedundantPaths(paths: string[]): string[] {
   const filteredPaths: string[] = [];
 
   // Normalize all paths for consistent comparison
-  const normalizedPaths = paths.map(p => path.normalize(p));
+  const normalizedPaths = paths.map((p) => path.normalize(p));
 
   for (let i = 0; i < normalizedPaths.length; i++) {
     let isRedundant = false;
@@ -83,8 +83,14 @@ function removeRedundantPaths(paths: string[]): string[] {
       if (i === j) continue;
       const otherPath = normalizedPaths[j];
       if (otherPath === currentPath) {
-        if (i > j) { isRedundant = true; break; }
-      } else if (isChild(currentPath, otherPath)) { isRedundant = true; break; }
+        if (i > j) {
+          isRedundant = true;
+          break;
+        }
+      } else if (isChild(currentPath, otherPath)) {
+        isRedundant = true;
+        break;
+      }
     }
 
     if (!isRedundant) {
@@ -151,8 +157,13 @@ export async function runPythonScript(
       }
     );
 
-    const mountableDirectories = removeRedundantPaths([...parseReadablePaths(permissions), tempDir]);
-    const mountCommands = mountableDirectories.map(d => `await pyodide.mountNodeFS("${d}", "${d}");`).join('\n');
+    const mountableDirectories = removeRedundantPaths([
+      ...parseReadablePaths(permissions),
+      tempDir,
+    ]);
+    const mountCommands = mountableDirectories
+      .map((d) => `await pyodide.mountNodeFS("${d}", "${d}");`)
+      .join('\n');
 
     // Write the deno wrapper script to a file
     const pythonExecuteScriptPath = path.join(tempDir, '.pythonExecuteScriptPath.ts');
