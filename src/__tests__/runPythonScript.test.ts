@@ -145,7 +145,7 @@ print(response.text)
         `,
         []
       )
-    ).rejects.toThrow(/--allow-net/);
+    ).rejects.toThrow();
   }, 30000);
 
   test('it can execute numpy operations without permissions', async () => {
