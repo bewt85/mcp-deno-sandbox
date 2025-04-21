@@ -81,6 +81,23 @@ describe('Deno Sandbox Integration Tests', () => {
     ).rejects.toThrow(/--allow-write/);
   });
 
+  test('with --allow-write=FILENAME, file can be written to', async () => {
+    // Set permission to read specific file
+    const writeFilePath = path.join(tempDir, 'write-test.txt');
+    const writePermissions = [`--allow-write=${writeFilePath}`];
+
+    // Should be able to write the file
+    await runDenoScript(
+      `
+      Deno.writeTextFileSync("${writeFilePath.replace(/\\/g, '\\\\')}", "Written by Deno");
+    `,
+      writePermissions
+    );
+
+    const writeResult = await fs.readFile(writeFilePath, { encoding: 'utf8'});
+    expect(writeResult.trim()).toBe('Written by Deno');
+  });
+
   test('if permissions allow directory read but deny subfile, other files can be read but not denied one', async () => {
     // Set permission to read directory but deny specific file
     const mixedPermissions = [`--allow-read=${tempDir}`, `--deny-read=${secretFilePath}`];

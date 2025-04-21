@@ -9,7 +9,7 @@ jest.setTimeout(30000);
 describe('Python Sandbox Integration Tests', () => {
   let tempDir: string;
 
-  // Only create temporary directory before tests
+  // Create temporary directory before tests
   beforeAll(async () => {
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'python-sandbox-test-'));
   });
@@ -41,30 +41,30 @@ print(json.dumps(d))
     expect(parsed.bar.baz).toEqual([1, 2, 3]);
   });
 
-  test('it can read and write files in a virtual filesystem', async () => {
-    // Test basic file operations in Pyodide's virtual file system
+  test('it can access host files when appropriate permissions are granted', async () => {
+    // Create a test file in the temp directory
+    const testFilePath = path.join(tempDir, 'readable-file.txt');
+    await fs.writeFile(testFilePath, 'File with permissions granted');
+
+    // Try to access it from Python with proper permissions
     const result = await runPythonScript(
       `
-with open("test_file.txt", "w") as f:
-    f.write("Hello from Python")
-
-with open("test_file.txt", "r") as f:
+with open("${testFilePath}", "r") as f:
     content = f.read()
-    
-print(content)
-    `,
-      []
+    print(content)
+      `,
+      [`--allow-read=${tempDir}`] // Grant specific permission to the temp directory
     );
 
-    expect(result.trim()).toBe('Hello from Python');
+    expect(result.trim()).toBe('File with permissions granted');
   });
 
-  test('it cannot access host files directly', async () => {
-    // Create a test file
-    const testFilePath = path.join(tempDir, 'test.txt');
-    await fs.writeFile(testFilePath, 'This is test content');
+  test('it cannot access host files without appropriate permissions', async () => {
+    // Create a test file in the temp directory
+    const testFilePath = path.join(tempDir, 'restricted-file.txt');
+    await fs.writeFile(testFilePath, 'File with no permissions granted');
 
-    // Try to access it from Python
+    // Try to access it from Python without proper permissions
     await expect(
       runPythonScript(
         `
@@ -72,9 +72,67 @@ with open("${testFilePath}", "r") as f:
     content = f.read()
     print(content)
         `,
-        ['--allow-read']
+        [] // No permissions granted
       )
     ).rejects.toThrow();
+  });
+
+  test('it cannot access host files outside granted directories', async () => {
+    // Create a test file in a different location than what permissions are granted for
+    const otherTempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'python-sandbox-other-'));
+    try {
+      const testFilePath = path.join(otherTempDir, 'outside-file.txt');
+      await fs.writeFile(testFilePath, 'File outside permitted directory');
+
+      // Try to access it from Python with permissions for a different directory
+      await expect(
+        runPythonScript(
+          `
+with open("${testFilePath}", "r") as f:
+    content = f.read()
+    print(content)
+          `,
+          [`--allow-read=${tempDir}`] // Permission for a different directory
+        )
+      ).rejects.toThrow();
+    } finally {
+      await fs.rm(otherTempDir, { recursive: true, force: true });
+    }
+  });
+
+  test('it can write to host files when appropriate permissions are granted', async () => {
+    const testFilePath = path.join(tempDir, 'writable-file.txt');
+    
+    // Write to a file with proper permissions
+    await runPythonScript(
+      `
+with open("${testFilePath}", "w") as f:
+    f.write("Successfully wrote to host file")
+      `,
+      [`--allow-read=${tempDir}`, `--allow-write=${tempDir}`] // Grant specific write permission to the temp directory
+    );
+
+    // Verify the file was written correctly
+    const fileContent = await fs.readFile(testFilePath, 'utf8');
+    expect(fileContent).toBe('Successfully wrote to host file');
+  });
+
+  test('it cannot write to host files without appropriate permissions', async () => {
+    const testFilePath = path.join(tempDir, 'no-write-file.txt');
+    
+    // Try to write to a file without permissions
+    await expect(
+      runPythonScript(
+        `
+with open("${testFilePath}", "w") as f:
+    f.write("This should not work")
+        `,
+        [] // No permissions granted
+      )
+    ).rejects.toThrow();
+    
+    // Verify the file doesn't exist
+    await expect(fs.access(testFilePath)).rejects.toThrow();
   });
 
   test('it cannot access the internet via requests without permissions', async () => {

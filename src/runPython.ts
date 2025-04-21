@@ -12,6 +12,89 @@ const execFileAsync = promisify(execFile);
 // Set umask at the top level to ensure files are only accessible by the runner
 process.umask(0o077);
 
+function parseReadablePaths(permissions: string[]): string[] {
+  const readablePaths = new Set<string>();
+
+  const filePermissionArguments = ["-R", "--allow-read", "-W", "--allow-write"]
+
+  for (const permission of permissions) {
+    // Check if this is a full read permission
+    if (filePermissionArguments.includes(permission)) {
+      // Add user's home directory and temp directory for full access
+      readablePaths.add(os.homedir());
+      readablePaths.add(os.tmpdir());
+      continue;
+    }
+
+    for (const p of filePermissionArguments) {
+      const argumentPrefix = `${p}=`;
+      // e.g. '--allow-read='
+      if (permission.startsWith(argumentPrefix)) {
+        const paths = permission.substring(argumentPrefix.length).split(",");
+        for (const path_str of paths) {
+          if (path_str) {
+            // Convert to absolute path if it's not already
+            const absolutePath = path.isAbsolute(path_str) ? path_str : path.resolve(path_str);
+            readablePaths.add(absolutePath);
+          }
+        }
+        continue;
+      }
+    }
+  }
+
+  // Convert Set to array
+  return Array.from(readablePaths);
+}
+
+function isChild(a: string, b: string): boolean {
+  // Assuming all paths are absolute already
+  // Remove the trailing separator
+  const aNorm = a.endsWith(path.sep) ? a.slice(0, a.length - 1) : a;
+  const bNorm = b.endsWith(path.sep) ? b.slice(0, b.length - 1) : b;
+  
+  if (a === b) return false; // handle identical paths separately
+  const aPaths = aNorm.split(path.sep);
+  const bPaths = bNorm.split(path.sep);
+  if (aPaths.length <= bPaths.length) return false;
+  
+  for (let i = 0; i < bPaths.length; i++) {
+    if (aPaths[i] !== bPaths[i]) return false;
+  }
+  return true;
+}
+
+/**
+ * Removes paths that are already covered by parent directories in the list
+ * @param paths Array of file or directory paths
+ * @returns Filtered array with redundant paths removed
+ */
+function removeRedundantPaths(paths: string[]): string[] {
+  const filteredPaths: string[] = [];
+
+  // Normalize all paths for consistent comparison
+  const normalizedPaths = paths.map(p => path.normalize(p));
+
+  for (let i = 0; i < normalizedPaths.length; i++) {
+    let isRedundant = false;
+    const currentPath = normalizedPaths[i];
+
+    for (let j = 0; j < normalizedPaths.length; j++) {
+      if (i === j) continue;
+      const otherPath = normalizedPaths[j];
+      if (otherPath === currentPath) {
+        if (i > j) { isRedundant = true; break; }
+      } else if (isChild(currentPath, otherPath)) { isRedundant = true; break; }
+    }
+
+    if (!isRedundant) {
+      filteredPaths.push(paths[i]);
+    }
+  }
+
+  return filteredPaths;
+}
+
 /**
  * Executes a Python script string with specified permissions using pyodide
  * @param scriptCode String containing the script code to run
@@ -68,6 +151,9 @@ export async function runPythonScript(
       }
     );
 
+    const mountableDirectories = removeRedundantPaths([...parseReadablePaths(permissions), tempDir]);
+    const mountCommands = mountableDirectories.map(d => `await pyodide.mountNodeFS("${d}", "${d}");`).join('\n');
+
     // Write the deno wrapper script to a file
     const pythonExecuteScriptPath = path.join(tempDir, '.pythonExecuteScriptPath.ts');
     const denoScript = `
@@ -79,6 +165,13 @@ export async function runPythonScript(
     // We need to load the dependencies again, but this time they are cached.
     // I disabled the integrity checking because we literally just installed them and we don't necessarily have web access any more.
     await pyodide.loadPackagesFromImports(scriptContent, { checkIntegrity: false, messageCallback: console.error, errorCallback: console.error });
+
+    // Prepare the native file system
+    ${mountCommands}
+    const pyOs = pyodide.pyimport('os');
+    pyOs.chdir("${tempDir}");
+
+    // Run the script
     await pyodide.runPythonAsync(scriptContent);
     `;
     await fs.writeFile(pythonExecuteScriptPath, denoScript, { mode: 0o600 }); // Only owner can read/write
