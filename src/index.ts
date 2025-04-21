@@ -4,12 +4,15 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 
-import { Logger, runDenoScript } from './runDeno';
+import { runDenoScript } from './runDeno';
 import { runPythonScript } from './runPython';
-import { ServerNotification } from '@modelcontextprotocol/sdk/types';
 
 // Get the permissions from the command line arguments
 const permissionArgs = process.argv.slice(2);
+const permissionsText =
+permissionArgs.length > 0
+  ? `Current Deno Permissions:\n${permissionArgs.join('\n')}`
+  : 'No permissions currently enabled. Code will run in a very restricted sandbox.';
 
 // Create an MCP server using the higher-level McpServer class
 const server = new McpServer({
@@ -19,18 +22,13 @@ const server = new McpServer({
 
 // Add a resource for Deno permissions
 server.resource('deno-permissions', 'permissions://deno', async (uri) => {
-  let permissionsText =
-    permissionArgs.length > 0
-      ? `Current Deno Permissions:\n${permissionArgs.join('\n')}`
-      : 'No permissions currently enabled. Code will run in a very restricted sandbox.';
-
   return {
     contents: [
       {
         uri: uri.href,
         text: `${permissionsText}
 
-Supported Deno permissions:
+Deno supports the following additional permissions but these need to be configured before the server is started:
 --allow-read[=<PATH>...] or -R[=<PATH>...]
 --deny-read[=<PATH>...]
 --allow-write[=<PATH>...] or -W[=<PATH>...]

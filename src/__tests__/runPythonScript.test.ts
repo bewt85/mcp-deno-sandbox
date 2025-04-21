@@ -106,8 +106,8 @@ with open("${testFilePath}", "r") as f:
     // Write to a file with proper permissions
     await runPythonScript(
       `
-with open("${testFilePath}", "w") as f:
-    f.write("Successfully wrote to host file")
+import js
+js.fs.writeFileSync("${testFilePath}", "Successfully wrote to host file")
       `,
       [`--allow-read=${tempDir}`, `--allow-write=${tempDir}`] // Grant specific write permission to the temp directory
     );
@@ -124,8 +124,8 @@ with open("${testFilePath}", "w") as f:
     await expect(
       runPythonScript(
         `
-with open("${testFilePath}", "w") as f:
-    f.write("This should not work")
+import js
+js.fs.writeFileSync("${testFilePath}", "This should not work")
         `,
         [] // No permissions granted
       )

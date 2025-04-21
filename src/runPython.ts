@@ -158,7 +158,10 @@ export async function runPythonScript(
     const pythonExecuteScriptPath = path.join(tempDir, '.pythonExecuteScriptPath.ts');
     const denoScript = `
     import pyodideModule from "npm:pyodide/pyodide.js";
-    const pyodide = await pyodideModule.loadPyodide();
+    import fs from "node:fs";
+    const pyodide = await pyodideModule.loadPyodide({
+      jsglobals: { fs },
+    });
     const decoder = new TextDecoder("utf-8");
     const scriptBytes = await Deno.readFile("script.py");
     const scriptContent = decoder.decode(scriptBytes);
