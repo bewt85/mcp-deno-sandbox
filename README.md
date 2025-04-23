@@ -1,22 +1,35 @@
 # Deno Sandbox MCP Server
 
+[![npm version](https://img.shields.io/npm/v/mcp-deno-sandbox.svg)](https://www.npmjs.com/package/mcp-deno-sandbox)
+
 An MCP server that allows you to run TypeScript, JavaScript, and Python code securely on your local machine using the Deno® sandbox. This server provides a controlled environment for executing code with explicit permission controls.
 
 > **Note:** This project is not affiliated with Deno Land LLC in any way. I'm just a fan of the Deno® runtime. "Deno" is a registered trademark of Deno Land LLC.
 
 ![Screenshot of a cowsay cow saying hello](./docs/cowsay.png)
 
-## Features
+## How and why
 
-- Restricted runtime environment for TypeScript, JavaScript, and Python code
-  - Controlled read / write filesystem access
-  - Controlled access to the network (by IP or domain)
-  - Controlled access to environment variables and other sensitive data
-- Uses Pyodide to support Python in the same Deno sandbox
+LLMs are great at writing cods and it can be useful if they can run and test it with limited human input. The problem is that they cannot be trusted not to do damage, especially if a malicious human can trick the LLM using prompt injection. For example you innocently ask a LLM to summarise an email and someone wrote you an email telling your LLM to run code to delete all your files and send all your bitcoin to them.
+
+A sandbox enforces limitations on what the code written by your LLM can do. For example we might say it can only change files in a specific folder, or contact specific trusted websites.
+
+Each operating system has different ways of creating sandboxes. Some are more secure, some are easier to setup. This project strikes a balance between the two.
+
+Our sandbox uses Deno which in turn uses the same technology Chrome uses to stop malicious websites damaging your computer. This lets you run Typescript and Javascript and relies on [very little of my code](./src/runDeno.ts).
+
+Some hard working people have also made Pyodide which lets you run Python inside a web browser. We use that to [let you run Python](./src/runPython.ts) inside the same Deno environment.
+
+You control permissions by passing arguments which are given directly to the Deno runtime. You can configure which:
+
+* files can be read (e.g. your codebase)
+* which files can we written
+* deny access to specific files (e.g. ssh keys)
+* which websites or IP addresses can be accessed
 
 ## Non Features
 
-I would like to keep this codebase simpler to read than alternative so people can audit it themselves.  I will avoid adding features which make the code harder to read.
+I would like to keep this codebase simpler to read than alternatives so people can audit it themselves.  Simplicity is an important security feature; the more people who understand it, the more who can spot a bug.
 
 I have also chosen to sacrifice some performance by not reusing pyodide environments.  This creates a small overhead but it makes the implementation easier to reason about.
 
