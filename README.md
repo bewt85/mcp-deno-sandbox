@@ -1,5 +1,7 @@
 # Deno Sandbox MCP Server
 
+[![npm version](https://img.shields.io/npm/v/mcp-deno-sandbox.svg)](https://www.npmjs.com/package/mcp-deno-sandbox)
+
 An MCP server that allows you to run TypeScript, JavaScript, and Python code securely on your local machine using the Deno® sandbox. This server provides a controlled environment for executing code with explicit permission controls.
 
 > **Note:** This project is not affiliated with Deno Land LLC in any way. I'm just a fan of the Deno® runtime. "Deno" is a registered trademark of Deno Land LLC.
@@ -18,19 +20,16 @@ Our sandbox uses Deno which in turn uses the same technology Chrome uses to stop
 
 Some hard working people have also made Pyodide which lets you run Python inside a web browser. We use that to [let you run Python](./src/runPython.ts) inside the same Deno environment.
 
-You control permissions by passing arguments which are given directly to the Deno runtime.
+You control permissions by passing arguments which are given directly to the Deno runtime. You can configure which:
 
-## Features
-
-- Restricted runtime environment for TypeScript, JavaScript, and Python code
-  - Controlled read / write filesystem access
-  - Controlled access to the network (by IP or domain)
-  - Controlled access to environment variables and other sensitive data
-- Uses Pyodide to support Python in the same Deno sandbox
+* files can be read (e.g. your codebase)
+* which files can we written
+* deny access to specific files (e.g. ssh keys)
+* which websites or IP addresses can be accessed
 
 ## Non Features
 
-I would like to keep this codebase simpler to read than alternative so people can audit it themselves.  I will avoid adding features which make the code harder to read.
+I would like to keep this codebase simpler to read than alternatives so people can audit it themselves.  Simplicity is an important security feature; the more people who understand it, the more who can spot a bug.
 
 I have also chosen to sacrifice some performance by not reusing pyodide environments.  This creates a small overhead but it makes the implementation easier to reason about.
 
