@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/mcp-deno-sandbox.svg)](https://www.npmjs.com/package/mcp-deno-sandbox)
 
-An MCP server that allows you to run TypeScript, JavaScript, and Python code securely on your local machine using the Deno® sandbox. This server provides a controlled environment for executing code with explicit permission controls.
+An MCP server that allows you to run TypeScript, JavaScript, and Python code in a sandbox on your local machine using the Deno® sandbox. This server provides a controlled environment for executing code with explicit permission controls (i.e. which websites it can visit, which files it can read).
 
 > **Note:** This project is not affiliated with Deno Land LLC in any way. I'm just a fan of the Deno® runtime. "Deno" is a registered trademark of Deno Land LLC.
 
@@ -10,7 +10,7 @@ An MCP server that allows you to run TypeScript, JavaScript, and Python code sec
 
 ## How and why
 
-LLMs are great at writing cods and it can be useful if they can run and test it with limited human input. The problem is that they cannot be trusted not to do damage, especially if a malicious human can trick the LLM using prompt injection. For example you innocently ask a LLM to summarise an email and someone wrote you an email telling your LLM to run code to delete all your files and send all your bitcoin to them.
+LLMs are great at writing code and it helps if the LLM can run the code itself to test it. The problem is that they cannot be trusted not to do damage, especially if a malicious human can trick the LLM using prompt injection. For example you innocently ask a LLM to summarise an email and someone wrote you an email telling your LLM to run code to delete all your files and send all your bitcoin to them.
 
 A sandbox enforces limitations on what the code written by your LLM can do. For example we might say it can only change files in a specific folder, or contact specific trusted websites.
 
@@ -18,7 +18,7 @@ Each operating system has different ways of creating sandboxes. Some are more se
 
 Our sandbox uses Deno which in turn uses the same technology Chrome uses to stop malicious websites damaging your computer. This lets you run Typescript and Javascript and relies on [very little of my code](./src/runDeno.ts).
 
-Some hard working people have also made Pyodide which lets you run Python inside a web browser. We use that to [let you run Python](./src/runPython.ts) inside the same Deno environment.
+Some hard working people have also made [Pyodide](https://pyodide.org/en/stable/) which lets you run Python inside a web browser. We use that to [let you run Python](./src/runPython.ts) inside the same Deno environment.
 
 You control permissions by passing arguments which are given directly to the Deno runtime. You can configure which:
 
@@ -42,6 +42,8 @@ I have also chosen to sacrifice some performance by not reusing pyodide environm
 
 This MCP should work with a range of MCP clients.
 
+You either need [Node.js](https://nodejs.org/) or [Deno](https://deno.com/) installed.  You don't need both.
+
 To use this MCP server with Claude Desktop, add it to your `claude_desktop_config.json` in:
 
 * macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
@@ -57,14 +59,14 @@ To use this MCP server with Claude Desktop, add it to your `claude_desktop_confi
       "args": [
         "run",
         "npm:mcp-deno-sandbox",
-        "--allow-net=icanhazip.com"
+        "--allow-net=icanhazip.com,example.com",
       ]
     }
   }
 }
 ```
 
-*If you have Nodejs installed* then Deno will be installed automatically
+*If you have Node.js installed* then Deno will be installed automatically
 ```json
 {
   "mcpServers": {
@@ -72,14 +74,14 @@ To use this MCP server with Claude Desktop, add it to your `claude_desktop_confi
       "command": "npx",
       "args": [
         "mcp-deno-sandbox",
-        "--allow-net=icanhazip.com"
+        "--allow-net=icanhazip.com,example.com"
       ]
     }
   }
 }
 ```
 
-You can help your LLM by encouraging it to use these tools.  There is also a resource which defines the permissions available in the sandbox.
+You can help your LLM by encouraging it to use these tools.  There is also a resource which defines the permissions available in the sandbox.  You can suggest that your LLM checks what permissions it has if it keeps getting permission denied errors.
 
 ### Permission Examples
 

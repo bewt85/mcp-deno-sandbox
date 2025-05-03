@@ -1,6 +1,6 @@
 {
   "name": "mcp-deno-sandbox",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
@@ -29,7 +29,7 @@
   ],
   "author": "Ben Taylor",
   "license": "MIT",
-  "description": "An MCP server that allows you to run TypeScript and JavaScript code securely on your local machine using the Deno® sandbox. This server provides a controlled environment for executing code with explicit permission controls. This project is not affiliated with Deno Land LLC in any way.",
+  "description": "An MCP server that allows you to run TypeScript, JavaScript, and Python code in a sandbox on your local machine using the Deno® sandbox. This server provides a controlled environment for executing code with explicit permission controls. This project is not affiliated with Deno Land LLC in any way.",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.10.1",
     "deno": "^2.2.11",
