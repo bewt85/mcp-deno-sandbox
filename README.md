@@ -145,7 +145,7 @@ npm install
 Check the code formatting and types:
 
 ```bash
-npm run checks
+npm run check
 ```
 
 Fix some issues automatically:
